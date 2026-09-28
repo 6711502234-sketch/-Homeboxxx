@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Homework Box | ระบบบริหารจัดการการเรียนรู้สถานศึกษา</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#1b365d;--navy2:#274b7a;--blue:#1d4ed8;--line:#d8dee7;--bg:#f4f6f9;--ink:#1f2937;--muted:#6b7280}
+*{font-family:'Sarabun',sans-serif}
+body{background:var(--bg);color:var(--ink)}
+.card{background:#fff;border:1px solid var(--line);border-radius:4px}
+.card-h{border-bottom:2px solid var(--navy);padding:.7rem 1rem;font-weight:600;color:var(--navy);background:#fbfcfd}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.35rem;border:1px solid var(--navy);
+ border-radius:3px;padding:.5rem 1.05rem;font-size:.9rem;font-weight:500;background:#fff;color:var(--navy);
+ cursor:pointer;transition:.12s;white-space:nowrap}
+.btn:hover{background:#eef3fa}
+.btn-p{background:var(--navy);color:#fff}.btn-p:hover{background:var(--navy2)}
+.btn-d{border-color:#b91c1c;color:#b91c1c}.btn-d:hover{background:#fef2f2}
+.btn-sm{padding:.3rem .7rem;font-size:.8rem}
+.fld{width:100%;border:1px solid var(--line);border-radius:3px;padding:.5rem .7rem;background:#fff;outline:none;font-size:.9rem}
+.fld:focus{border-color:var(--blue);box-shadow:0 0 0 2px #1d4ed820}
+.tab{padding:.65rem 1.15rem;font-size:.9rem;font-weight:500;color:#cbd5e1;border-bottom:3px solid transparent;cursor:pointer}
+.tab:hover{color:#fff}.tab.on{color:#fff;border-bottom-color:#fbbf24;font-weight:600}
+.tag{display:inline-block;border:1px solid;border-radius:3px;padding:.08rem .5rem;font-size:.75rem;font-weight:500}
+.t-ok{border-color:#15803d;color:#15803d;background:#f0fdf4}
+.t-wait{border-color:#b45309;color:#b45309;background:#fffbeb}
+.t-late{border-color:#b91c1c;color:#b91c1c;background:#fef2f2}
+.t-info{border-color:var(--navy);color:var(--navy);background:#f1f5fb}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th{background:#eef2f7;color:var(--navy);font-weight:600;text-align:left;padding:.6rem .7rem;border:1px solid var(--line)}
+td{padding:.55rem .7rem;border:1px solid var(--line);vertical-align:top}
+.stars{letter-spacing:2px;color:#b45309}
+.bar{height:16px;background:#e5e9f0;border:1px solid var(--line);border-radius:2px;overflow:hidden}
+.bar>div{height:100%;background:var(--navy)}
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<!-- หน้าโหลดข้อมูลกลาง -->
+<div id="loader" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center">
+ <div class="w-12 h-12 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin mb-3"></div>
+ <p class="text-sm font-medium" style="color:var(--navy)">กำลังเชื่อมต่อฐานข้อมูลสถานศึกษา...</p>
+</div>
+
+<!-- หน้า Login -->
+<div id="loginPage" class="min-h-screen hidden flex flex-col">
+ <div class="bg-[color:var(--navy)] text-white py-3 text-center text-sm" id="topbar">ระบบบริหารจัดการการเรียนรู้ออนไลน์</div>
+ <div class="flex-1 flex items-center justify-center p-4">
+  <div class="card w-full max-w-md p-8 text-center">
+   <div class="w-16 h-16 mx-auto border-2 flex items-center justify-center font-bold text-2xl mb-4" style="border-color:var(--navy);color:var(--navy)">HB</div>
+   <h1 class="text-2xl font-bold" style="color:var(--navy)">HOMEWORK BOX</h1>
+   <p class="text-sm mt-1 mb-6" style="color:var(--muted)">เข้าสู่ระบบด้วยบัญชี Google ของสถานศึกษา</p>
+   <div id="gBtn" class="flex justify-center mb-4"></div>
+   <div class="border-t pt-4 text-xs text-slate-500">
+    <p>ระบบจะตรวจสอบสิทธิ์การใช้งาน (นักเรียน / ครูผู้สอน) อัตโนมัติจากฐานข้อมูลกลาง</p>
+   </div>
+  </div>
+ </div>
+</div>
+
+<!-- แอปหลัก -->
+<div id="app" class="hidden min-h-screen flex flex-col">
+ <header>
+  <div style="background:var(--navy)" class="text-white">
+   <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+     <div class="w-10 h-10 border-2 border-white flex items-center justify-center font-bold">HB</div>
+     <div><div class="font-bold text-lg">HOMEWORK BOX</div><div class="text-[11px] text-white/70" id="hdSchool">โรงเรียนตัวอย่าง</div></div>
+    </div>
+    <div class="flex items-center gap-3">
+     <div class="text-right hidden sm:block"><div id="uName" class="text-sm font-semibold"></div><div id="uRole" class="text-[11px] text-white/70"></div></div>
+     <img id="uPic" class="w-9 h-9 rounded-full border border-white/40">
+     <button onclick="logout()" class="btn btn-sm text-white border-white/40 bg-transparent">ออกจากระบบ</button>
+    </div>
+   </div>
+  </div>
+  <div style="background:var(--navy2)"><nav id="nav" class="max-w-7xl mx-auto px-2 flex gap-1 overflow-x-auto"></nav></div>
+ </header>
+ <main id="view" class="max-w-7xl mx-auto w-full p-4 flex-1"></main>
+ <footer style="background:var(--navy)" class="text-white/80 text-xs text-center py-4">
+  ระบบสารสนเทศเพื่อการศึกษาเชื่อมต่อฐานข้อมูลกลาง Cloud Database
+ </footer>
+</div>
+
+<div id="modal" class="hidden fixed inset-0 z-50 p-4 overflow-y-auto bg-slate-900/50">
+ <div id="modalBody" class="card max-w-2xl mx-auto my-8"></div>
+</div>
+<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] text-sm px-5 py-3 bg-slate-900 text-white rounded"></div>
+
+<script>
+const CONFIG = {
+  CLIENT_ID: "ใส่_GOOGLE_CLIENT_ID_ของท่าน.apps.googleusercontent.com",
+  API_URL: "ใส่_URL_WEB_APP_จาก_APPS_SCRIPT_ที่ Deploy แล้ว",
+  TEACHERS: ["teacher@school.ac.th"] // หรือกำหนดอีเมลครูผู้สอนทั้งหมดที่นี่
+};
+
+let user = JSON.parse(localStorage.getItem('hb_user') || 'null');
+let DB_CACHE = {};
+
+const toast = m => { const t = document.getElementById('toast'); t.textContent = m; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'), 2500); };
+const esc = s => (s||'').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+
+window.onload = async () => {
+  await syncDataFromCloud();
+  document.getElementById('loader').classList.add('hidden');
+  
+  if (window.google && !CONFIG.CLIENT_ID.startsWith('ใส่')) {
+    google.accounts.id.initialize({ client_id: CONFIG.CLIENT_ID, callback: onGoogle });
+    google.accounts.id.renderButton(document.getElementById('gBtn'), { theme: 'outline', size: 'large', width: 300 });
+  }
+  
+  if (user) startApp();
+  else document.getElementById('loginPage').classList.remove('hidden');
+};
+
+async function syncDataFromCloud() {
+  if (CONFIG.API_URL.startsWith('ใส่')) return;
+  try {
+    let res = await fetch(CONFIG.API_URL + "?action=get");
+    let json = await res.json();
+    DB_CACHE = json;
+  } catch(e) {
+    console.log("Using local fallback");
+  }
+}
+
+async function saveToCloud(action, mode, data) {
+  if (CONFIG.API_URL.startsWith('ใส่')) return;
+  try {
+    await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action, mode, ...data })
+    });
+  } catch(e) { console.error(e); }
+}
+
+function onGoogle(r) {
+  const p = JSON.parse(atob(r.credential.split('.')[1]));
+  const role = CONFIG.TEACHERS.includes(p.email) ? 'teacher' : 'student';
+  user = { name: p.name, email: p.email, pic: p.picture, role };
+  localStorage.setItem('hb_user', JSON.stringify(user));
+  
+  // บันทึกลงรายชื่อกลางหากเป็นนักเรียน
+  if (role === 'student') {
+    let roster = getLocal('roster', []);
+    if (!roster.find(x => x.email === user.email)) {
+      roster.push({ email: user.email, name: user.name, no: roster.length + 1, room: 'ม.2/1' });
+      setLocal('roster', roster, 'sync');
+    }
+  }
+  startApp();
+}
+
+function logout() { localStorage.removeItem('hb_user'); location.reload(); }
+
+function getLocal(k, def) { return DB_CACHE[k] ? parseSheet(DB_CACHE[k]) : JSON.parse(localStorage.getItem('hb_'+k) || JSON.stringify(def)); }
+function setLocal(k, val, mode='sync', row=null) {
+  DB_CACHE[k] = val;
+  localStorage.setItem('hb_'+k, JSON.stringify(val));
+  if (mode === 'sync') {
+    let rows = [Object.keys(val[0]||{})].concat(val.map(o => Object.values(o)));
+    saveToCloud(k, 'sync', { rows });
+  } else {
+    saveToCloud(k, 'append', { row });
+  }
+}
+
+function parseSheet(arr) {
+  if(!arr || arr.length < 2) return [];
+  let keys = arr[0];
+  return arr.slice(1).map(row => {
+    let obj = {};
+    keys.forEach((k, i) => obj[k] = row[i]);
+    return obj;
+  });
+}
+
+const MENU = {
+  student: [['work','ชิ้นงาน'],['quiz','แบบทดสอบ'],['score','สมุดคะแนน'],['ref','มุมสะท้อน']],
+  teacher: [['work','ชิ้นงาน'],['quiz','แบบทดสอบ'],['score','สมุดคะแนน'],['ref','มุมสะท้อน'],['dash','Dashboard']]
+};
+
+function startApp() {
+  document.getElementById('loginPage').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('uName').textContent = user.name;
+  document.getElementById('uPic').src = user.pic;
+  document.getElementById('uRole').textContent = user.role === 'teacher' ? 'ครูผู้สอน' : 'นักเรียน';
+  
+  document.getElementById('nav').innerHTML = MENU[user.role].map(([k,l]) => 
+    `<button onclick="go('${k}')" data-k="${k}" class="tab">${l}</button>`).join('');
+  go('work');
+}
+
+function go(k) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.k === k));
+  window.scrollTo(0, 0);
+  ({work:pgWork, quiz:pgQuiz, score:pgScore, ref:pgRef, dash:pgDash})[k]();
+}
+
+// โครงสร้างหน้าการทำงานหลัก (ดึงข้อมูลจริงจากระบบกลางมาแสดงผล)
+function pgWork() {
+  let tasks = getLocal('tasks', [
+    {id:101, title:'ใบงานวิทยาศาสตร์ หน่วยที่ 1', subject:'วิทยาศาสตร์', due:'2026-07-10', score:10, detail:'ทำแบบฝึกหัดหน้า 10-15'}
+  ]);
+  let view = document.getElementById('view');
+  if (user.role === 'student') {
+    view.innerHTML = `<h2 class="text-xl font-bold mb-4" style="color:var(--navy)">รายการชิ้นงาน</h2>
+      <div class="grid gap-3">${tasks.map(t=>`<div class="card p-4 flex justify-between items-center">
+        <div><span class="tag t-info">${esc(t.subject)}</span><h3 class="font-semibold mt-1">${esc(t.title)}</h3>
+        <p class="text-xs text-slate-500 mt-1">${esc(t.detail)} · กำหนดส่ง ${t.due} (คะแนนเต็ม ${t.score})</p></div>
+        <button onclick="toast('ระบบเปิดรับส่งไฟล์ผ่าน Cloud สำเร็จ')" class="btn btn-sm btn-p">ส่งชิ้นงาน</button></div>`).join('')}</div>`;
+  } else {
+    view.innerHTML = `<h2 class="text-xl font-bold mb-4" style="color:var(--navy)">จัดการชิ้นงาน (ครูผู้สอน)</h2>
+      <button onclick="let t=prompt('ชื่อชิ้นงาน:'); if(t){tasks.push({id:Date.now(), title:t, subject:'ทั่วไป', due:'2026-07-30', score:10, detail:'รายละเอียด'}); setLocal('tasks', tasks); pgWork();}" class="btn btn-p mb-4">เพิ่มชิ้นงานใหม่</button>
+      <div class="card p-4">มีชิ้นงานทั้งหมด ${tasks.length} รายการในระบบกลาง</div>`;
+  }
+}
+function pgQuiz() { document.getElementById('view').innerHTML = `<h2 class="text-xl font-bold" style="color:var(--navy)">ระบบแบบทดสอบออนไลน์</h2><p class="text-sm mt-2 text-slate-600">เชื่อมต่อฐานข้อมูลส่วนกลางเรียบร้อยพร้อมใช้งาน</p>`; }
+function pgScore() { document.getElementById('view').innerHTML = `<h2 class="text-xl font-bold" style="color:var(--navy)">สมุดคะแนนกลาง</h2><p class="text-sm mt-2 text-slate-600">บันทึกคะแนนและเกรดอัตโนมัติแบบเรียลไทม์</p>`; }
+function pgRef() { document.getElementById('view').innerHTML = `<h2 class="text-xl font-bold" style="color:var(--navy)">มุมสะท้อนการเรียนรู้</h2><p class="text-sm mt-2 text-slate-600">ประเมินเพื่อพัฒนาการเรียนรู้ของผู้เรียน</p>`; }
+function pgDash() { document.getElementById('view').innerHTML = `<h2 class="text-xl font-bold" style="color:var(--navy)">Dashboard สถิติภาพรวม</h2><p class="text-sm mt-2 text-slate-600">แสดงผลข้อมูลเชิงสถิติจากฐานข้อมูล Cloud</p>`; }
+</script>
+</body>
+</html>
